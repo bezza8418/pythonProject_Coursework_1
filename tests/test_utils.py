@@ -8,8 +8,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from src.utils import get_greeting, load_user_settings, get_transactions_for_period
-
+from src.utils import get_greeting, load_user_settings, get_transactions_for_period, calculate_cards_info
 
 class TestGetGreeting:
     """Тесты для функции get_greeting."""
@@ -128,3 +127,34 @@ class TestGetTransactionsForPeriod:
 
         assert len(result) == 0
         assert isinstance(result, pd.DataFrame)
+
+
+class TestCalculateCardsInfo:
+    """Тесты для функции calculate_cards_info."""
+
+    @pytest.fixture
+    def sample_df_with_cards(self):
+        """Фикстура с тестовыми транзакциями по картам."""
+        data = {
+            'Номер карты': [1234567890123456, 1234567890123456, 9876543210987654, 9876543210987654],
+            'Сумма платежа': [-1500, -2300, -800, 5000],  # 5000 - поступление, не расход
+            'Категория': ['Супермаркеты', 'Рестораны', 'Транспорт', 'Пополнение']
+        }
+        return pd.DataFrame(data)
+
+    def test_calculate_cards_info(self, sample_df_with_cards):
+        """Тест расчета информации по картам."""
+        result = calculate_cards_info(sample_df_with_cards)
+
+        # Должно быть 2 карты
+        assert len(result) == 2
+
+        # Первая карта
+        card1 = next(c for c in result if c['last_digits'] == '3456')
+        assert card1['total_spent'] == 3800  # 1500 + 2300
+        assert card1['cashback'] == 38.0  # 3800 / 100
+
+        # Вторая карта
+        card2 = next(c for c in result if c['last_digits'] == '7654')
+        assert card2['total_spent'] == 800  # только расход -800
+        assert card2['cashback'] == 8.0  # 800 / 100

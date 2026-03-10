@@ -80,3 +80,38 @@ def get_transactions_for_period(df: pd.DataFrame, target_date: datetime) -> pd.D
     mask = (df['Дата операции'] >= start_of_month) & (df['Дата операции'] <= target_date)
 
     return df[mask].copy()
+
+
+def calculate_cards_info(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """
+    Рассчитывает информацию по картам: последние цифры, расходы, кешбэк.
+
+    Args:
+        df: DataFrame с транзакциями (должен содержать колонки 'Номер карты' и 'Сумма платежа')
+
+    Returns:
+        Список словарей с информацией по каждой карте
+    """
+    # Группируем по картам
+    cards_info = []
+
+    # Получаем уникальные карты (игнорируем пустые значения)
+    cards = df['Номер карты'].dropna().unique()
+
+    for card in cards:
+        # Фильтруем транзакции по карте (только расходы, не поступления)
+        card_transactions = df[
+            (df['Номер карты'] == card) &
+            (df['Сумма платежа'] < 0)  # Расходы - отрицательные суммы
+            ]
+
+        total_spent = abs(card_transactions['Сумма платежа'].sum())
+        cashback = round(total_spent / 100, 2)  # 1 рубль на каждые 100 рублей
+
+        cards_info.append({
+            "last_digits": str(int(card))[-4:],  # Последние 4 цифры
+            "total_spent": round(total_spent, 2),
+            "cashback": cashback
+        })
+
+    return cards_info
