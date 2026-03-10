@@ -40,10 +40,16 @@ def main_page(date_str: str) -> str:
         settings = load_user_settings()
 
         # Загружаем транзакции из Excel
-        df = pd.read_excel("data/operations.xlsx")
+        try:
+            df = pd.read_excel("data/operations.xlsx")
+            logger.info(f"Загружено {len(df)} транзакций")
+        except FileNotFoundError:
+            logger.error("Файл data/operations.xlsx не найден")
+            return json.dumps({"error": "Файл с данными не найден"}, ensure_ascii=False)
 
         # Фильтруем транзакции за нужный период
         df_filtered = get_transactions_for_period(df, dt)
+        logger.info(f"Отфильтровано {len(df_filtered)} транзакций за период")
 
         # Формируем ответ
         response = {
@@ -54,8 +60,11 @@ def main_page(date_str: str) -> str:
             "stock_prices": get_stocks_prices(settings["user_stocks"])
         }
 
-        return json.dumps(response, ensure_ascii=False, indent=2)
+        return json.dumps(response, ensure_ascii=False, indent=2, default=str)
 
+    except ValueError as e:
+        logger.error(f"Ошибка формата даты: {e}")
+        return json.dumps({"error": f"Неверный формат даты: {e}"}, ensure_ascii=False)
     except Exception as e:
-        logger.error(f"Ошибка в main_page: {e}")
+        logger.error(f"Неожиданная ошибка в main_page: {e}")
         return json.dumps({"error": str(e)}, ensure_ascii=False)
