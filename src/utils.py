@@ -115,3 +115,45 @@ def calculate_cards_info(df: pd.DataFrame) -> List[Dict[str, Any]]:
         })
 
     return cards_info
+
+
+def get_top_transactions(df: pd.DataFrame, top_n: int = 5) -> List[Dict[str, Any]]:
+    """
+    Возвращает топ-N транзакций по сумме платежа.
+
+    Args:
+        df: DataFrame с транзакциями
+        top_n: Количество транзакций в топе (по умолчанию 5)
+
+    Returns:
+        Список словарей с топ транзакциями
+    """
+    if df.empty:
+        return []
+
+    # Сортируем по сумме платежа (по убыванию, берем по модулю)
+    df_sorted = df.copy()
+
+    # Преобразуем дату в datetime, если она еще строка
+    if isinstance(df_sorted['Дата операции'].iloc[0], str):
+        df_sorted['Дата операции'] = pd.to_datetime(df_sorted['Дата операции'], dayfirst=True)
+
+    df_sorted['abs_amount'] = df_sorted['Сумма платежа'].abs()
+    df_sorted = df_sorted.sort_values('abs_amount', ascending=False)
+
+    # Берем топ-N
+    top_df = df_sorted.head(top_n)
+
+    result = []
+    for _, row in top_df.iterrows():
+        # Форматируем дату
+        date_str = row['Дата операции'].strftime('%d.%m.%Y')
+
+        result.append({
+            "date": date_str,
+            "amount": float(row['Сумма платежа']),
+            "category": row['Категория'],
+            "description": row.get('Описание', '')
+        })
+
+    return result

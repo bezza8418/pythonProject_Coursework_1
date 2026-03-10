@@ -8,7 +8,13 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from src.utils import get_greeting, load_user_settings, get_transactions_for_period, calculate_cards_info
+from src.utils import (
+    get_greeting,
+    load_user_settings,
+    get_transactions_for_period,
+    calculate_cards_info,
+    get_top_transactions
+)
 
 class TestGetGreeting:
     """Тесты для функции get_greeting."""
@@ -158,3 +164,49 @@ class TestCalculateCardsInfo:
         card2 = next(c for c in result if c['last_digits'] == '7654')
         assert card2['total_spent'] == 800  # только расход -800
         assert card2['cashback'] == 8.0  # 800 / 100
+
+
+class TestGetTopTransactions:
+    """Тесты для функции get_top_transactions."""
+
+    @pytest.fixture
+    def sample_df_with_amounts(self):
+        """Фикстура с тестовыми транзакциями разного размера."""
+        data = {
+            'Дата операции': ['01.03.2024', '02.03.2024', '03.03.2024', '04.03.2024', '05.03.2024', '06.03.2024'],
+            'Сумма платежа': [100, -5000, 300, -20000, 50, -1000],
+            'Категория': ['Еда', 'Перевод', 'Транспорт', 'Покупка', 'Кофе', 'Ресторан'],
+            'Описание': ['Продукты', 'Перевод другу', 'Такси', 'Телефон', 'Кофе', 'Ужин']
+        }
+        return pd.DataFrame(data)
+
+    def test_get_top_5_default(self, sample_df_with_amounts):
+        """Тест получения топ-5 транзакций (по умолчанию)."""
+        result = get_top_transactions(sample_df_with_amounts)
+
+        assert len(result) == 5
+        # Самая большая по модулю должна быть -20000
+        assert result[0]['amount'] == -20000
+        assert result[0]['category'] == 'Покупка'
+
+        # Вторая по величине -5000
+        assert result[1]['amount'] == -5000
+        assert result[1]['category'] == 'Перевод'
+
+    def test_get_top_3_custom(self, sample_df_with_amounts):
+        """Тест получения топ-3 транзакций."""
+        result = get_top_transactions(sample_df_with_amounts, top_n=3)
+
+        assert len(result) == 3
+        # Должны быть: -20000, -5000, -1000 (или 100? нет, -1000 больше чем 100)
+        amounts = [r['amount'] for r in result]
+        assert -20000 in amounts
+        assert -5000 in amounts
+        assert -1000 in amounts
+        assert 100 not in amounts
+
+    def test_get_top_transactions_empty_df(self):
+        """Тест с пустым DataFrame."""
+        empty_df = pd.DataFrame(columns=['Дата операции', 'Сумма платежа', 'Категория'])
+        result = get_top_transactions(empty_df)
+        assert result == []
