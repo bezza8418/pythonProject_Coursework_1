@@ -22,19 +22,35 @@ def get_currency_rate(currency: str) -> Optional[float]:
         Курс валюты или None при ошибке
     """
     api_key = os.getenv("EXCHANGE_RATES_API_KEY")
+    print(f"🔍 DEBUG: API ключ = '{api_key}'")  # Отладка
+
     if not api_key:
+        print("❌ DEBUG: API ключ не найден")
         return None
 
-    url = f"https://api.apilayer.com/exchangerates_data/latest"
+    url = "https://api.apilayer.com/exchangerates_data/latest"
     headers = {"apikey": api_key}
     params = {"base": "RUB", "symbols": currency}
 
+    print(f"🔍 DEBUG: Запрос к {url} с params={params}")
+
     try:
         response = requests.get(url, headers=headers, params=params, timeout=5)
+        print(f"🔍 DEBUG: Статус ответа = {response.status_code}")
+
         response.raise_for_status()
         data = response.json()
-        return data.get("rates", {}).get(currency)
-    except (requests.RequestException, KeyError, ValueError):
+        print(f"🔍 DEBUG: Ответ API = {data}")
+
+        rate = data.get("rates", {}).get(currency)
+        print(f"🔍 DEBUG: Курс {currency} = {rate}")
+
+        return rate
+    except requests.RequestException as e:
+        print(f"❌ DEBUG: Ошибка запроса: {e}")
+        return None
+    except (KeyError, ValueError) as e:
+        print(f"❌ DEBUG: Ошибка парсинга: {e}")
         return None
 
 
