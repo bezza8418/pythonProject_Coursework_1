@@ -4,8 +4,9 @@
 
 import json
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional # Dict, Any
 from functools import wraps
 
 import pandas as pd
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def report_decorator(filename: Optional[str] = None):
     """
-    Декоратор для функций-отчетов. Сохраняет результат в JSON-файл.
+    Декоратор для функций-отчетов. Сохраняет результат в JSON-файл в папке data/.
 
     Args:
         filename: Имя файла для сохранения (если не указано, используется имя функции)
@@ -29,14 +30,21 @@ def report_decorator(filename: Optional[str] = None):
             # Определяем имя файла
             output_file = filename or f"{func.__name__}.json"
 
+            # Путь к папке data (создаем, если нет)
+            data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+            os.makedirs(data_dir, exist_ok=True)
+
+            # Полный путь к файлу
+            file_path = os.path.join(data_dir, output_file)
+
             # Сохраняем результат
-            with open(output_file, 'w', encoding='utf-8') as f:
+            with open(file_path, 'w', encoding='utf-8') as f:
                 if isinstance(result, pd.DataFrame):
                     json.dump(result.to_dict(orient='records'), f, ensure_ascii=False, indent=2, default=str)
                 else:
                     json.dump(result, f, ensure_ascii=False, indent=2, default=str)
 
-            logger.info(f"Отчет сохранен в файл {output_file}")
+            logger.info(f"Отчет сохранен в файл {file_path}")
             return result
 
         return wrapper

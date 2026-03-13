@@ -216,3 +216,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 . i d e a /
+
+# Отчеты (все, кроме user_settings.json)
+data/*.json
+!user_settings.json
