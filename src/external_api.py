@@ -3,7 +3,7 @@
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from dotenv import load_dotenv
@@ -22,35 +22,24 @@ def get_currency_rate(currency: str) -> Optional[float]:
         Курс валюты или None при ошибке
     """
     api_key = os.getenv("EXCHANGE_RATES_API_KEY")
-    print(f"🔍 DEBUG: API ключ = '{api_key}'")  # Отладка
-
     if not api_key:
-        print("❌ DEBUG: API ключ не найден")
         return None
 
     url = "https://api.apilayer.com/exchangerates_data/latest"
     headers = {"apikey": api_key}
     params = {"base": "RUB", "symbols": currency}
 
-    print(f"🔍 DEBUG: Запрос к {url} с params={params}")
-
     try:
         response = requests.get(url, headers=headers, params=params, timeout=5)
-        print(f"🔍 DEBUG: Статус ответа = {response.status_code}")
-
         response.raise_for_status()
         data = response.json()
-        print(f"🔍 DEBUG: Ответ API = {data}")
-
         rate = data.get("rates", {}).get(currency)
-        print(f"🔍 DEBUG: Курс {currency} = {rate}")
-
-        return rate
-    except requests.RequestException as e:
-        print(f"❌ DEBUG: Ошибка запроса: {e}")
+        return float(rate) if rate is not None else None
+    except requests.RequestException:
         return None
-    except (KeyError, ValueError) as e:
-        print(f"❌ DEBUG: Ошибка парсинга: {e}")
+    except KeyError:
+        return None
+    except ValueError:
         return None
 
 
@@ -69,11 +58,7 @@ def get_stock_price(symbol: str) -> Optional[float]:
         return None
 
     url = "https://www.alphavantage.co/query"
-    params = {
-        "function": "GLOBAL_QUOTE",
-        "symbol": symbol,
-        "apikey": api_key
-    }
+    params = {"function": "GLOBAL_QUOTE", "symbol": symbol, "apikey": api_key}
 
     try:
         response = requests.get(url, params=params, timeout=5)
@@ -81,11 +66,17 @@ def get_stock_price(symbol: str) -> Optional[float]:
         data = response.json()
         price = data.get("Global Quote", {}).get("05. price")
         return float(price) if price else None
-    except (requests.RequestException, KeyError, ValueError, TypeError):
+    except requests.RequestException:
+        return None
+    except KeyError:
+        return None
+    except ValueError:
+        return None
+    except TypeError:
         return None
 
 
-def get_currencies_rates(currencies: List[str]) -> List[Dict[str, float]]:
+def get_currencies_rates(currencies: List[str]) -> List[Dict[str, Any]]:
     """
     Получает курсы для списка валют.
 
@@ -95,15 +86,15 @@ def get_currencies_rates(currencies: List[str]) -> List[Dict[str, float]]:
     Returns:
         Список словарей [{"currency": "USD", "rate": 73.21}, ...]
     """
-    result = []
+    result: List[Dict[str, Any]] = []
     for currency in currencies:
         rate = get_currency_rate(currency)
         if rate is not None:
-            result.append({"currency": currency, "rate": round(rate, 2)})
+            result.append({"currency": currency, "rate": round(rate, 4)})
     return result
 
 
-def get_stocks_prices(stocks: List[str]) -> List[Dict[str, float]]:
+def get_stocks_prices(stocks: List[str]) -> List[Dict[str, Any]]:
     """
     Получает цены для списка акций.
 
@@ -113,7 +104,7 @@ def get_stocks_prices(stocks: List[str]) -> List[Dict[str, float]]:
     Returns:
         Список словарей [{"stock": "AAPL", "price": 150.12}, ...]
     """
-    result = []
+    result: List[Dict[str, Any]] = []
     for stock in stocks:
         price = get_stock_price(stock)
         if price is not None:

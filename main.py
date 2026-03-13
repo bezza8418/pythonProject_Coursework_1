@@ -3,7 +3,7 @@
 Демонстрирует работу веб-страниц, сервисов и отчетов.
 """
 
-import os
+# import os
 import json
 from datetime import datetime, timedelta
 import random
@@ -66,7 +66,7 @@ def demo_views():
 
         cards = data.get('cards', [])
         for card in cards:
-            print(f"   Карта *{card.get('last_digits')}: {card.get('total_spent')} руб. (кешбэк: {card.get('cashback')})")
+            print(f"Карта *{card.get('last_digits')}: {card.get('total_spent')} руб. (кешбэк: {card.get('cashback')})")
 
         print(f"\n📊 Топ транзакций: {len(data.get('top_transactions', []))} шт")
         for i, t in enumerate(data.get('top_transactions', [])[:3], 1):
@@ -130,7 +130,7 @@ def demo_reports():
     try:
         result = spending_by_category(df, "Супермаркеты", datetime.now().strftime("%Y-%m-%d"))
 
-        print(f"\n🛒 Траты по категории 'Супермаркеты' за последние 3 месяца:")
+        print("\n🛒 Траты по категории 'Супермаркеты' за последние 3 месяца:")
         print(f"   Найдено транзакций: {len(result)}")
 
         if not result.empty:
@@ -155,7 +155,7 @@ def demo_external_api():
         rates = get_currencies_rates(currencies)
 
         if rates:
-            print(f"\n💵 Курсы валют:")
+            print("\n💵 Курсы валют:")
             for rate in rates:
                 print(f"   {rate['currency']}: {rate['rate']} RUB")
         else:
@@ -166,7 +166,7 @@ def demo_external_api():
         prices = get_stocks_prices(stocks)
 
         if prices:
-            print(f"\n📈 Цены акций:")
+            print("\n📈 Цены акций:")
             for price in prices:
                 print(f"   {price['stock']}: ${price['price']}")
         else:

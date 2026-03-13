@@ -4,7 +4,7 @@
 
 import json
 import logging
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ def simple_search(transactions: List[Dict[str, Any]], query: str) -> str:
     result = []
 
     for transaction in transactions:
-        description = transaction.get('Описание', '').lower()
-        category = transaction.get('Категория', '').lower()
+        description = transaction.get("Описание", "").lower()
+        category = transaction.get("Категория", "").lower()
 
         if query_lower in description or query_lower in category:
             result.append(transaction)

@@ -4,7 +4,7 @@
 
 import json
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -38,10 +38,7 @@ def load_user_settings() -> Dict[str, Any]:
     Returns:
         Словарь с настройками: {"user_currencies": [...], "user_stocks": [...]}
     """
-    default_settings = {
-        "user_currencies": ["USD", "EUR"],
-        "user_stocks": ["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"]
-    }
+    default_settings = {"user_currencies": ["USD", "EUR"], "user_stocks": ["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"]}
 
     try:
         with open("user_settings.json", "r", encoding="utf-8") as f:
@@ -53,10 +50,10 @@ def load_user_settings() -> Dict[str, Any]:
         if "user_stocks" not in settings:
             settings["user_stocks"] = default_settings["user_stocks"]
 
-        return settings
-    except (FileNotFoundError, json.JSONDecodeError):
+        return dict(settings)  # Явное преобразование в dict
+    except FileNotFoundError, json.JSONDecodeError:
         # Если файл не найден или битый, возвращаем настройки по умолчанию
-        return default_settings
+        return dict(default_settings)  # Явное преобразование в dict
 
 
 def get_transactions_for_period(df: pd.DataFrame, target_date: datetime) -> pd.DataFrame:
@@ -71,13 +68,13 @@ def get_transactions_for_period(df: pd.DataFrame, target_date: datetime) -> pd.D
         Отфильтрованный DataFrame
     """
     # Убеждаемся, что колонка с датой в правильном формате
-    df['Дата операции'] = pd.to_datetime(df['Дата операции'], dayfirst=True)
+    df["Дата операции"] = pd.to_datetime(df["Дата операции"], dayfirst=True)
 
     # Начало месяца
     start_of_month = datetime(target_date.year, target_date.month, 1)
 
     # Фильтруем
-    mask = (df['Дата операции'] >= start_of_month) & (df['Дата операции'] <= target_date)
+    mask = (df["Дата операции"] >= start_of_month) & (df["Дата операции"] <= target_date)
 
     return df[mask].copy()
 
@@ -96,23 +93,24 @@ def calculate_cards_info(df: pd.DataFrame) -> List[Dict[str, Any]]:
     cards_info = []
 
     # Получаем уникальные карты (игнорируем пустые значения)
-    cards = df['Номер карты'].dropna().unique()
+    cards = df["Номер карты"].dropna().unique()
 
     for card in cards:
         # Фильтруем транзакции по карте (только расходы, не поступления)
         card_transactions = df[
-            (df['Номер карты'] == card) &
-            (df['Сумма платежа'] < 0)  # Расходы - отрицательные суммы
-            ]
+            (df["Номер карты"] == card) & (df["Сумма платежа"] < 0)  # Расходы - отрицательные суммы
+        ]
 
-        total_spent = abs(card_transactions['Сумма платежа'].sum())
+        total_spent = abs(card_transactions["Сумма платежа"].sum())
         cashback = round(total_spent / 100, 2)  # 1 рубль на каждые 100 рублей
 
-        cards_info.append({
-            "last_digits": str(int(card))[-4:],  # Последние 4 цифры
-            "total_spent": round(total_spent, 2),
-            "cashback": cashback
-        })
+        cards_info.append(
+            {
+                "last_digits": str(int(card))[-4:],  # Последние 4 цифры
+                "total_spent": round(total_spent, 2),
+                "cashback": cashback,
+            }
+        )
 
     return cards_info
 
@@ -135,11 +133,11 @@ def get_top_transactions(df: pd.DataFrame, top_n: int = 5) -> List[Dict[str, Any
     df_sorted = df.copy()
 
     # Преобразуем дату в datetime, если она еще строка
-    if isinstance(df_sorted['Дата операции'].iloc[0], str):
-        df_sorted['Дата операции'] = pd.to_datetime(df_sorted['Дата операции'], dayfirst=True)
+    if isinstance(df_sorted["Дата операции"].iloc[0], str):
+        df_sorted["Дата операции"] = pd.to_datetime(df_sorted["Дата операции"], dayfirst=True)
 
-    df_sorted['abs_amount'] = df_sorted['Сумма платежа'].abs()
-    df_sorted = df_sorted.sort_values('abs_amount', ascending=False)
+    df_sorted["abs_amount"] = df_sorted["Сумма платежа"].abs()
+    df_sorted = df_sorted.sort_values("abs_amount", ascending=False)
 
     # Берем топ-N
     top_df = df_sorted.head(top_n)
@@ -147,13 +145,15 @@ def get_top_transactions(df: pd.DataFrame, top_n: int = 5) -> List[Dict[str, Any
     result = []
     for _, row in top_df.iterrows():
         # Форматируем дату
-        date_str = row['Дата операции'].strftime('%d.%m.%Y')
+        date_str = row["Дата операции"].strftime("%d.%m.%Y")
 
-        result.append({
-            "date": date_str,
-            "amount": float(row['Сумма платежа']),
-            "category": row['Категория'],
-            "description": row.get('Описание', '')
-        })
+        result.append(
+            {
+                "date": date_str,
+                "amount": float(row["Сумма платежа"]),
+                "category": row["Категория"],
+                "description": row.get("Описание", ""),
+            }
+        )
 
     return result

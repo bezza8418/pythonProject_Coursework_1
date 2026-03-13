@@ -5,17 +5,16 @@
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Any
 
 import pandas as pd
 
 from src.external_api import get_currencies_rates, get_stocks_prices
 from src.utils import (
-    get_greeting,
-    load_user_settings,
-    get_transactions_for_period,
     calculate_cards_info,
-    get_top_transactions
+    get_greeting,
+    get_top_transactions,
+    get_transactions_for_period,
+    load_user_settings,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ def main_page(date_str: str) -> str:
             "cards": calculate_cards_info(df_filtered),
             "top_transactions": get_top_transactions(df_filtered),
             "currency_rates": get_currencies_rates(settings["user_currencies"]),
-            "stock_prices": get_stocks_prices(settings["user_stocks"])
+            "stock_prices": get_stocks_prices(settings["user_stocks"]),
         }
 
         return json.dumps(response, ensure_ascii=False, indent=2, default=str)
